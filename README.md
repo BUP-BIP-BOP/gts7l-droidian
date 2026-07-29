@@ -50,6 +50,18 @@ git commit -am "gts7l: SM-T875" && git push
 
 CI форка соберёт `linux-bootimage-4.19-*-samsung-gts7l.deb`.
 
+> **Известная поломка сборки.** Сниппет упаковки Droidian собирает
+> `init_boot.img` безусловно, с `--header_version 2` и без `--dtb`. Свежий
+> `mkbootimg` такую комбинацию отвергает:
+>
+> ```
+> ValueError: DTB image must not be empty.
+> ```
+>
+> и падает вся сборка. Устройство не GKI, `init_boot` в пакет не попадает, так
+> что цель заглушена в `debian/rules` форка. Убрать заглушку, когда сниппет
+> перестанет собирать `init_boot` безусловно.
+
 ### 2. Пакет адаптации
 
 ```bash
