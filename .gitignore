@@ -5,3 +5,5 @@ raw-*.img
 *.deb
 *.zip
 .DS_Store
+
+out/

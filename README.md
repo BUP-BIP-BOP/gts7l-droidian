@@ -56,15 +56,22 @@ CI форка соберёт `linux-bootimage-4.19-*-samsung-gts7l.deb`.
 cd adaptation && dpkg-buildpackage -us -uc -b
 ```
 
-### 3. Образ загрузки
+### 3. Комплект для прошивки
 
 ```bash
-ar x linux-bootimage-*.deb && tar xf data.tar.*
-python3 tools/build-bootimg.py boot/boot.img-* boot-gts7l.img
+./tools/make-flashable.sh          # заберёт .deb из CI форка ядра
+./tools/make-flashable.sh path.deb # или из локального пакета
 ```
 
-Скрипт правит заголовок под ожидания ABL и подписывает образ AVB-футером.
-Без этого загрузчик Samsung молча останавливается на заставке.
+Скрипт распакует пакет, соберёт `boot.img` и `boot-rescue.img` под ожидания
+Samsung ABL, пропатчит `dtbo.img` под тачпад Book Cover и положит рядом
+`vbmeta-disabled.img`. Всё в `out/`.
+
+Правка заголовка и AVB-футер обязательны: без них загрузчик молча
+останавливается на заставке, не передавая управление ядру.
+
+`avbtool` на macOS не ставится пакетом — `tools/get-avbtool.sh` подтянет его из
+AOSP, а `build-bootimg.py` принимает путь через переменную `AVBTOOL`.
 
 ## Прошивка
 

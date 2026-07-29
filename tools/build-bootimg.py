@@ -12,9 +12,15 @@ Usage:
 
   --rescue  use console=null to drop into RNDIS+telnet rescue at 192.168.2.15:23
 
-Requires: avbtool in PATH, testkey_rsa4096.pem next to this script (or via --key).
+Requires: avbtool (in PATH or via AVBTOOL=/path/to/avbtool.py) and
+testkey_rsa4096.pem next to this script (or via --key).
 """
 import struct, sys, subprocess, os, argparse, shutil
+
+# avbtool is not packaged on every host (macOS in particular). Allow pointing at
+# a checkout of AOSP external/avb: AVBTOOL=/path/to/avbtool.py
+AVBTOOL = os.environ.get("AVBTOOL", "avbtool")
+AVB_CMD = [sys.executable, AVBTOOL] if AVBTOOL.endswith(".py") else [AVBTOOL]
 
 # --- Samsung Tab S7 LTE constants ---
 BOOT_PARTITION_SIZE     = 71303168     # /dev/block/by-name/boot (confirmed from BoardConfig)
@@ -65,9 +71,9 @@ def main():
 
     shutil.copy(a.raw, a.out)
     patch_header(a.out, cmdline)
-    subprocess.run(["avbtool", "erase_footer", "--image", a.out],
+    subprocess.run(AVB_CMD + ["erase_footer", "--image", a.out],
                    stderr=subprocess.DEVNULL)
-    subprocess.run(["avbtool", "add_hash_footer",
+    subprocess.run(AVB_CMD + ["add_hash_footer",
                     "--image", a.out,
                     "--partition_size", str(psize),
                     "--partition_name", a.partition,
