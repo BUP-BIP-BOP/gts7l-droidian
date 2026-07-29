@@ -153,7 +153,7 @@ adaptation/                      пакет adaptation-samsung-gts7l
   etc/libinput/                    калибровка пера и тача
 tools/build-bootimg.py           заголовок + AVB-футер под Samsung ABL
 tools/make-touchpad-dtbo.py      ориентация тачпада Book Cover
-tools/grow-rootfs.sh              расширение /data/rootfs.img из TWRP
+tools/grow-rootfs.sh             расширение /data/rootfs.img из TWRP
 ```
 
 ## Чего ждать при первом запуске
