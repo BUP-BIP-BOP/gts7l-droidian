@@ -48,6 +48,9 @@ if [ -z "$DEB" ]; then
     [ -n "$DEB" ] || { red "в артефакте нет linux-bootimage-*.deb"; exit 1; }
 fi
 
+# Путь должен быть абсолютным: распаковка идёт после cd в рабочий каталог.
+case "$DEB" in /*) ;; *) DEB="$(cd "$(dirname "$DEB")" && pwd)/$(basename "$DEB")" ;; esac
+
 info "распаковываю $(basename "$DEB")"
 rm -rf "$WORK/x" && mkdir -p "$WORK/x"
 ( cd "$WORK/x" && ar x "$DEB" && tar xf data.tar.* )
