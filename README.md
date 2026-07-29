@@ -82,8 +82,17 @@ Samsung ABL, пропатчит `dtbo.img` под тачпад Book Cover и п�
 Правка заголовка и AVB-футер обязательны: без них загрузчик молча
 останавливается на заставке, не передавая управление ядру.
 
-`avbtool` на macOS не ставится пакетом — `tools/get-avbtool.sh` подтянет его из
-AOSP, а `build-bootimg.py` принимает путь через переменную `AVBTOOL`.
+Инструменты на macOS: `avbtool` пакетом не ставится — `tools/get-avbtool.sh`
+подтянет его из AOSP. Оба скрипта принимают пути через переменные:
+
+```bash
+export AVBTOOL=$(./tools/get-avbtool.sh)
+brew install dtc          # нужен только для патча тачпада
+export DTC=$(which dtc)
+```
+
+Без `dtc` патч dtbo пропускается, и `make-flashable.sh` кладёт стоковый dtbo —
+на загрузку это не влияет, отличается только ориентация тачпада Book Cover.
 
 ## Прошивка
 

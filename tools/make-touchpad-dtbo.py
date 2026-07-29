@@ -9,9 +9,19 @@ then re-adds AVB hash footer so Samsung ABL accepts it under vbmeta flags=0x02.
 Usage:
   python3 make-touchpad-dtbo.py <stock_dtbo.img> <out_dtbo.img> [--key testkey_rsa4096.pem]
 
-Requires: dtc, avbtool in PATH; testkey next to this script (or via --key).
+Requires: dtc и avbtool — в PATH или через переменные DTC и AVBTOOL;
+testkey рядом со скриптом (или через --key).
+
+Если правка не нужна или инструментов нет, скрипт завершится с ненулевым
+кодом, а make-flashable.sh просто скопирует стоковый dtbo.
 """
 import struct, subprocess, sys, os, argparse, tempfile
+
+# avbtool и dtc есть не на каждом хосте (macOS в первую очередь).
+# AVBTOOL может указывать на avbtool.py из AOSP, DTC — на бинарник dtc.
+AVBTOOL = os.environ.get("AVBTOOL", "avbtool")
+AVB_CMD = [sys.executable, AVBTOOL] if AVBTOOL.endswith(".py") else [AVBTOOL]
+DTC = os.environ.get("DTC", "dtc")
 
 OLD = "touchpad,invert = <0x00 0x01 0x01>"
 NEW = "touchpad,invert = <0x00 0x00 0x00>"
@@ -43,14 +53,14 @@ def main():
         fi = os.path.join(tmp, f"i{i}.dtb")
         open(fi, "wb").write(fdt)
         dts = subprocess.run(
-            ["dtc", "-I", "dtb", "-O", "dts", fi], capture_output=True
+            [DTC, "-I", "dtb", "-O", "dts", fi], capture_output=True
         ).stdout.decode("utf-8", "replace")
         if OLD in dts:
             dts = dts.replace(OLD, NEW)
             changed += 1
             fo = os.path.join(tmp, f"o{i}.dtb")
             subprocess.run(
-                ["dtc", "-I", "dts", "-O", "dtb", "-o", fo],
+                [DTC, "-I", "dts", "-O", "dtb", "-o", fo],
                 input=dts.encode(),
                 capture_output=True,
             )
@@ -70,8 +80,8 @@ def main():
     out += fa
     open(a.out, "wb").write(out)
     subprocess.run(
-        [
-            "avbtool", "add_hash_footer",
+        AVB_CMD + [
+            "add_hash_footer",
             "--image", a.out,
             "--partition_name", "dtbo",
             "--partition_size", str(PART_SIZE),
