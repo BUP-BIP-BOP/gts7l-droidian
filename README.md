@@ -7,8 +7,12 @@
 
 ## Статус
 
-Порт **не проверялся на железе**. Он собран переносом с двух рабочих соседей и
-дополнен значениями, снятыми с самого T875 в ходе портирования Ubuntu Touch.
+Порт **загружается на железе**: Phosh стартует, работают тач, автоповорот,
+камеры и Wi-Fi. Заставка Droidian при загрузке не показывается — экран остаётся
+на логотипе Samsung до появления оболочки.
+
+Основа собрана переносом с двух рабочих соседей и дополнена значениями, снятыми
+с самого T875 в ходе портирования Ubuntu Touch.
 
 | Основание | Что взято |
 |---|---|
@@ -110,6 +114,28 @@ Rootfs Droidian берётся с [images.droidian.org](https://images.droidian.
 годится только форк heimdall от amo13: апстрим не делает reset USB перед
 рукопожатием и падает с `Failed to send handshake`.
 
+### Обязательный шаг: расширить rootfs
+
+```bash
+./tools/grow-rootfs.sh 16G      # планшет в TWRP
+```
+
+Образ с images.droidian.org приезжает заполненным на 100% — свободно около 16 МБ.
+Ветка LVM на этом устройстве не срабатывает: userdata отформатирован в ext4,
+тома `droidian` нет (`Volume group "droidian" not found`), initramfs откатывается
+на файл `/data/rootfs.img` и **не растит** его. Система при этом грузится, но
+без места не поднимается ни контейнер, ни оболочка:
+
+```
+systemd-journald[829]: Failed to open system journal: No space left on device
+init: SetupMountNamespaces failed: No space left on device
+```
+
+Внешне это выглядит как зависание на логотипе Samsung — ровно как отказ
+загрузчика, хотя ядро и systemd уже работают. Отличить можно по `pstore`: если
+в `console-ramoops-0` есть `Run /init` и строки systemd — ядро стартовало, дело
+в пользовательском пространстве.
+
 Подробности по прошивке, включая сборку heimdall и работу с разделами, — в
 [gts7l-ubports/docs/FLASH.md](https://github.com/BUP-BIP-BOP/gts7l-ubports/blob/master/docs/FLASH.md);
 процедура для Droidian отличается только образом rootfs.
@@ -127,6 +153,7 @@ adaptation/                      пакет adaptation-samsung-gts7l
   etc/libinput/                    калибровка пера и тача
 tools/build-bootimg.py           заголовок + AVB-футер под Samsung ABL
 tools/make-touchpad-dtbo.py      ориентация тачпада Book Cover
+tools/grow-rootfs.sh              расширение /data/rootfs.img из TWRP
 ```
 
 ## Чего ждать при первом запуске
