@@ -24,15 +24,27 @@ DEB="${1:-}"
 
 if [ -z "$DEB" ]; then
     command -v gh >/dev/null || { red "нужен gh или путь к .deb аргументом"; exit 1; }
+    # Фильтровать по общему статусу прогона нельзя: на форке падает шаг
+    # публикации на GitHub Pages, и весь прогон помечается как failure, хотя
+    # джоба сборки прошла и артефакт на месте. Ищем прогон с артефактом.
     info "ищу свежую сборку ядра в $KERNEL_REPO"
-    RUN=$(gh run list --repo "$KERNEL_REPO" --branch droidian --status success \
-          --limit 1 --json databaseId --jq '.[0].databaseId')
-    [ -n "$RUN" ] || { red "нет успешных сборок на ветке droidian"; exit 1; }
+    RUN=""
+    for r in $(gh run list --repo "$KERNEL_REPO" --branch droidian --limit 10 \
+               --json databaseId --jq '.[].databaseId'); do
+        if gh api "repos/$KERNEL_REPO/actions/runs/$r/artifacts" \
+             --jq '.artifacts[].name' 2>/dev/null | grep -q .; then
+            RUN="$r"; break
+        fi
+    done
+    [ -n "$RUN" ] || { red "нет прогонов с артефактами на ветке droidian"; exit 1; }
 
     info "скачиваю артефакт прогона $RUN"
     rm -rf "$WORK/deb" && mkdir -p "$WORK/deb"
     gh run download "$RUN" --repo "$KERNEL_REPO" -D "$WORK/deb"
-    DEB=$(find "$WORK/deb" -name "linux-bootimage-*.deb" | head -n1)
+    # Образы лежат в версионном пакете (linux-bootimage-4.19-325-samsung-gts7l),
+    # а не в одноимённом мета-пакете, который только тянет зависимости.
+    DEB=$(find "$WORK/deb" -name "linux-bootimage-[0-9]*.deb" | head -n1)
+    [ -n "$DEB" ] || DEB=$(find "$WORK/deb" -name "linux-bootimage-*.deb" | head -n1)
     [ -n "$DEB" ] || { red "в артефакте нет linux-bootimage-*.deb"; exit 1; }
 fi
 
