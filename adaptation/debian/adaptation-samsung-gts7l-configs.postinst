@@ -1,22 +1,15 @@
 #!/bin/sh
-# Auto-rotate enablement for gts7l.
+# Sensor daemon enablement for gts7l.
+#
+# The accelerometer transformation matrix is deliberately left alone: the
+# identity matrix that sensorfw ships is correct on this panel, verified by
+# auto-rotation working in all orientations on hardware. An earlier version of
+# this package rotated it by 90°, which was a guess carried over from a phone
+# port.
 set -e
-
-ACCEL_MATRIX="0,-1,0,1,0,0,0,0,1"
 
 case "$1" in
     configure)
-        F=/etc/sensorfw/sensord-hybris.conf
-        if [ -f "$F" ] && ! grep -q "transformation_matrix = \"$ACCEL_MATRIX\"" "$F"; then
-            tmp="$(mktemp)"
-            awk -v m="$ACCEL_MATRIX" '
-                /^\[/ { ina = 0 }
-                /^\[accelerometer\]/ { ina = 1 }
-                ina && /transformation_matrix/ { sub(/"[^"]*"/, "\"" m "\"") }
-                { print }
-            ' "$F" > "$tmp" && cat "$tmp" > "$F"
-            rm -f "$tmp"
-        fi
         if [ -d /run/systemd/system ]; then
             systemctl enable sensorfwd.service >/dev/null 2>&1 || true
         fi
