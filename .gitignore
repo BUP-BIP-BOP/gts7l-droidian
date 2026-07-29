@@ -1,0 +1,7 @@
+kernel-debs/
+flash/
+build-deb/
+raw-*.img
+*.deb
+*.zip
+.DS_Store

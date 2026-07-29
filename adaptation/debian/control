@@ -1,0 +1,28 @@
+Source: adaptation-samsung-gts7l
+Maintainer: Andrey Ratenkov <ratenkov144@gmail.com>
+Section: metapackages
+Priority: optional
+Build-Depends: debhelper (>= 10)
+Standards-Version: 4.5.0.3
+Vcs-Browser: https://github.com/BUP-BIP-BOP/gts7l-droidian
+Vcs-Git: https://github.com/BUP-BIP-BOP/gts7l-droidian.git
+
+Package: adaptation-samsung-gts7l
+Architecture: all
+Depends: ${misc:Depends},
+         linux-bootimage-samsung-gts7l,
+         adaptation-hybris-api30-phone,
+         adaptation-samsung-gts7l-configs,
+Description: adaptation-samsung-gts7l - meta
+ Samsung Galaxy Tab S7 LTE (SM-T875, codename gts7l) api30
+ adaptation metapackage. Depends on the kernel bootimage, the Halium
+ hybris API-30 phone runtime, and this device's adaptation configs.
+
+Package: adaptation-samsung-gts7l-configs
+Architecture: all
+Depends: ${misc:Depends},
+Description: Samsung Galaxy Tab S7 LTE (gts7l)'s specific adaptation configs
+ Device-specific configuration files (udev rules, phosh compositor settings,
+ device flag files, hwcomposer/audio glue) for the Samsung Galaxy Tab S7
+ Wi-Fi (gts7l) running Droidian on top of a Halium-12 / Android-11
+ vendor partition.

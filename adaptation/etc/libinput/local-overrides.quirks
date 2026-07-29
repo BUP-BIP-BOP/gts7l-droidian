@@ -1,0 +1,10 @@
+# Tab S7 (gts7l) libinput device quirks.
+#
+# S-Pen (Wacom W9021, "sec_e-pen"): the Samsung digitizer driver leaves the ABS
+# X/Y axis resolution unset (0). libinput requires a resolution for tablet tools.
+# The digitizer is 24576x15360 over the ~254x159mm 11" panel -> ~97 units/mm.
+# (Панель T875 — те же 11", что у T870; у T970 она больше, 12.4".)
+# Provide it so libinput treats the S-Pen as a tablet tool.
+[Samsung gts7l S-Pen]
+MatchName=sec_e-pen
+AttrResolutionHint=97x97

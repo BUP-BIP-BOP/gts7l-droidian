@@ -1,0 +1,10 @@
+adaptation-samsung-gts7l (0.1.0) trixie; urgency=medium
+
+  * Initial adaptation for SM-T875 (Galaxy Tab S7 LTE).
+  * Adapted from the SM-T870 port: same board, plus the modem.
+  * Boot header values taken from the stock T875XXS5DXD1 firmware rather than
+    inherited from neighbouring ports.
+  * ofono binder configuration for the LTE modem, radio HAL 1.5.
+  * NetworkManager route fix and swlan0/p2p0 left unmanaged.
+
+ -- Andrey Ratenkov <ratenkov144@gmail.com>  Wed, 29 Jul 2026 12:00:00 +0000

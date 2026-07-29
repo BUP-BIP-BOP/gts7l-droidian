@@ -1,0 +1,119 @@
+name: Build Flash Package
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'adaptation/**'
+      - 'tools/**'
+      - '.github/workflows/build-flash-package.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 device-tree-compiler python3-pycryptodome
+          # avbtool: download from AOSP (googlesource returns base64)
+          curl -sL "https://android.googlesource.com/platform/external/avb/+/refs/heads/main/avbtool.py?format=TEXT" \
+            | base64 -d | sudo tee /usr/local/bin/avbtool > /dev/null
+          sudo chmod +x /usr/local/bin/avbtool
+          avbtool version
+
+      - name: Download kernel artifact
+        env:
+          GH_TOKEN: ${{ secrets.KERNEL_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          # Find latest run on the droidian branch
+          RUN_ID=$(gh api "repos/BUP-BIP-BOP/kernel_samsung_sm8250/actions/runs?branch=droidian&per_page=5" \
+            --jq '[.workflow_runs[] | select(.head_branch=="droidian")] | .[0].id')
+          echo "Using kernel CI run: $RUN_ID"
+
+          ARTIFACT_ID=$(gh api "repos/BUP-BIP-BOP/kernel_samsung_sm8250/actions/runs/${RUN_ID}/artifacts" \
+            --jq '.artifacts[] | select(.name=="artifact") | .id')
+          echo "Artifact ID: $ARTIFACT_ID"
+
+          # Download artifact (requires read access to source repo's actions)
+          gh api "repos/BUP-BIP-BOP/kernel_samsung_sm8250/actions/artifacts/${ARTIFACT_ID}/zip" > kernel-artifact.zip
+          unzip kernel-artifact.zip -d kernel-debs/
+          ls -la kernel-debs/
+
+      - name: Extract boot.img and dtbo.img from deb
+        run: |
+          cd kernel-debs
+          ar x linux-bootimage-4.19-325-samsung-gts7l_*.deb
+          tar xf data.tar.* ./boot/
+          ls -la boot/
+
+          # boot.img and dtbo.img are named with kernel version suffix
+          cp boot/boot.img-* ../raw-boot.img
+          cp boot/dtbo.img-* ../raw-dtbo.img 2>/dev/null || true
+          cd ..
+          ls -la raw-*.img
+
+      - name: Build Samsung-compatible boot images
+        run: |
+          mkdir -p flash
+          python3 tools/build-bootimg.py raw-boot.img flash/boot.img
+          python3 tools/build-bootimg.py raw-boot.img flash/boot-rescue.img --rescue
+
+      - name: Build patched DTBO (Book Cover trackpad fix)
+        run: |
+          if [ -f raw-dtbo.img ]; then
+            python3 tools/make-touchpad-dtbo.py raw-dtbo.img flash/dtbo.img
+          else
+            echo "::warning::No dtbo.img found in kernel deb, skipping trackpad patch"
+          fi
+
+      - name: Copy vbmeta
+        run: cp vbmeta-disabled.img flash/
+
+      - name: Build adaptation deb
+        run: |
+          mkdir -p build-deb/DEBIAN
+          cp adaptation/debian/adaptation-samsung-gts7l-configs.postinst build-deb/DEBIAN/postinst
+          chmod 755 build-deb/DEBIAN/postinst
+
+          cp -a adaptation/etc build-deb/
+          cp -a adaptation/usr build-deb/
+
+          find build-deb/usr -name "*.sh" -exec chmod 755 {} \;
+          chmod 755 build-deb/usr/lib/adaptation-samsung-gts7l/wlan-routes-fix
+          chmod 755 build-deb/etc/NetworkManager/dispatcher.d/50-wlan-routes
+
+          cat > build-deb/DEBIAN/control << 'EOF'
+          Package: adaptation-samsung-gts7l-configs
+          Version: 0.0.1
+          Architecture: all
+          Maintainer: iridite <noreply@github.com>
+          Depends:
+          Description: Samsung Galaxy Tab S7 LTE (gts7l) adaptation configs
+           Device-specific configuration files (udev rules, phosh compositor settings,
+           device flag files, hwcomposer/audio glue) for the Samsung Galaxy Tab S7
+           Wi-Fi (gts7l) running Droidian.
+          EOF
+          sed -i 's/^          //' build-deb/DEBIAN/control
+
+          dpkg-deb --build build-deb flash/adaptation-samsung-gts7l-configs_0.0.1_all.deb
+
+      - name: Add docs and checksums
+        run: |
+          cp QUICK-FLASH.md flash/
+          cd flash
+          sha256sum *.img *.deb > SHA256SUMS
+
+      - name: Upload flash package
+        uses: actions/upload-artifact@v4
+        with:
+          name: droidian-flash-gts7l-${{ github.run_number }}
+          path: flash/
+          retention-days: 90

@@ -1,0 +1,11 @@
+etc/NetworkManager/conf.d/*            /etc/NetworkManager/conf.d/
+etc/NetworkManager/dispatcher.d/*      /etc/NetworkManager/dispatcher.d/
+etc/bluetooth/main.conf                /etc/bluetooth/
+etc/environment.d/*                    /etc/environment.d/
+etc/libinput/local-overrides.quirks    /etc/libinput/
+etc/ofono/binder.d/*                   /etc/ofono/binder.d/
+etc/ofono/ril_subscription.d/*         /etc/ofono/ril_subscription.d/
+etc/phosh/phoc.ini                     /etc/phosh/
+etc/pulse/arm_droid_card_custom.pa     /etc/pulse/
+usr/lib/adaptation-samsung-gts7l/*     /usr/lib/adaptation-samsung-gts7l/
+usr/lib/droidian/device/*              /usr/lib/droidian/device/
